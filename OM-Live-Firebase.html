@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>OM Live — Operations Management Diagnostic</title>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --black:#0A0A0A;--dark:#0F0F0F;--surface:#141210;--warm:#E8E0D0;
+  --gold:#B8944A;--goldlt:#D4BC7A;--golddim:#6B5420;--goldmid:#8B6C30;
+  --parch:#F5F2EC;--muted:#8A8070;--rule:#2A2520;--rulelite:#3A3428;
+  --teal:#1A5C52;--teallt:#6EC8A0;--red:#9B2335;--redlt:#D08080;
+  --slate:#3A4A5C;--white:#FFFFFF;
+}
+html,body{height:100%;background:var(--black);color:var(--warm);
+  font-family:'Georgia','Cambria',serif;-webkit-font-smoothing:antialiased}
+.sans{font-family:'Calibri','Arial',sans-serif}
+.hide{display:none!important}
+
+/* ── SETUP WIZARD ── */
+#setup{min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:32px 20px;position:relative;overflow:hidden}
+.bg-om{position:fixed;font-size:42vw;font-weight:700;color:#0D0B09;right:-5vw;
+  top:50%;transform:translateY(-50%);user-select:none;pointer-events:none;z-index:0;
+  font-family:'Georgia',serif}
+.setup-inner{position:relative;z-index:1;width:100%;max-width:560px}
+.eyebrow{font-family:'Calibri',sans-serif;font-size:10px;font-weight:700;
+  color:var(--golddim);letter-spacing:.28em;text-transform:uppercase;margin-bottom:18px}
+.setup-title{font-size:clamp(32px,5vw,52px);font-weight:700;color:var(--parch);
+  line-height:1.05;margin-bottom:10px}
+.setup-sub{font-size:14px;color:var(--muted);font-style:italic;
+  margin-bottom:32px;line-height:1.65}
+.gold-bar{height:2px;background:var(--gold);margin:0 0 32px;width:60px}
+.step-card{background:var(--surface);border:1px solid var(--rule);border-radius:4px;
+  padding:24px 28px;margin-bottom:14px}
+.step-num{font-size:11px;font-family:'Calibri',sans-serif;font-weight:700;
+  color:var(--golddim);letter-spacing:.2em;text-transform:uppercase;margin-bottom:6px}
+.step-title{font-size:17px;font-weight:700;color:var(--warm);margin-bottom:8px}
+.step-body{font-size:12.5px;color:var(--muted);line-height:1.7;font-style:italic}
+.step-body a{color:var(--goldlt);text-decoration:none}
+.step-body a:hover{text-decoration:underline}
+.config-label{font-family:'Calibri',sans-serif;font-size:11px;font-weight:700;
+  color:var(--golddim);letter-spacing:.15em;text-transform:uppercase;
+  margin:14px 0 6px}
+.config-input{width:100%;background:#0D0B09;border:1px solid var(--rulelite);
+  border-radius:3px;padding:11px 14px;color:var(--warm);font-family:'Calibri',sans-serif;
+  font-size:13px;outline:none;transition:border-color .2s}
+.config-input:focus{border-color:var(--gold)}
+.config-input::placeholder{color:var(--rule)}
+.btn-gold{display:block;width:100%;padding:14px 0;background:var(--gold);border:none;
+  border-radius:2px;color:var(--black);font-family:'Calibri',sans-serif;font-size:11px;
+  font-weight:700;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;
+  transition:opacity .2s;margin-top:20px}
+.btn-gold:hover{opacity:.85}
+.btn-outline{display:block;width:100%;padding:13px 0;background:transparent;
+  border:1px solid var(--rule);border-radius:2px;color:var(--muted);
+  font-family:'Calibri',sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:.22em;text-transform:uppercase;cursor:pointer;
+  transition:border-color .2s,color .2s;margin-top:10px}
+.btn-outline:hover{border-color:var(--goldmid);color:var(--goldlt)}
+.status-msg{margin-top:14px;font-family:'Calibri',sans-serif;font-size:12px;
+  text-align:center;min-height:18px}
+.status-msg.ok{color:var(--teallt)}
+.status-msg.err{color:var(--redlt)}
+
+/* ── ROLE CHOOSER ── */
+#chooser{min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:32px 20px;text-align:center}
+.chooser-inner{position:relative;z-index:1;max-width:560px;width:100%}
+.chooser-title{font-size:clamp(36px,5vw,56px);font-weight:700;color:var(--parch);
+  line-height:1.05;margin-bottom:10px}
+.chooser-sub{font-size:14px;color:var(--muted);font-style:italic;
+  margin-bottom:36px;line-height:1.6}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:480px;margin:0 auto}
+@media(max-width:480px){.role-grid{grid-template-columns:1fr}}
+.role-card{background:var(--surface);border:1px solid var(--rule);border-radius:4px;
+  padding:26px 20px;cursor:pointer;transition:border-color .2s,background .2s;text-align:left}
+.role-card:hover{border-color:var(--gold);background:#1A1408}
+.role-icon{font-size:26px;margin-bottom:12px;display:block;color:var(--gold)}
+.role-name{font-size:15px;font-weight:700;color:var(--gold);margin-bottom:5px}
+.role-desc{font-family:'Calibri',sans-serif;font-size:12px;color:var(--muted);line-height:1.5}
+.session-tag{margin-top:28px;font-family:'Calibri',sans-serif;font-size:11px;
+  color:#2A2218;letter-spacing:.15em}
+.reconfigure-btn{margin-top:16px;background:transparent;border:none;
+  font-family:'Calibri',sans-serif;font-size:11px;color:#3A3028;cursor:pointer;
+  letter-spacing:.1em;text-decoration:underline}
+
+/* ── PRESENTER DASHBOARD ── */
+#dashboard{min-height:100vh;display:flex;flex-direction:column}
+.dash-header{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 28px;border-bottom:1px solid var(--rule);background:var(--dark);flex-shrink:0}
+.dash-logo{font-size:13px;font-weight:700;color:var(--gold);
+  font-family:'Calibri',sans-serif;letter-spacing:.08em}
+.live-badge{display:flex;align-items:center;gap:7px;font-family:'Calibri',sans-serif;
+  font-size:10px;font-weight:700;color:var(--teallt);letter-spacing:.18em}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--teallt);
+  animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.dash-body{flex:1;display:grid;grid-template-columns:1fr 300px;overflow:hidden}
+@media(max-width:860px){.dash-body{grid-template-columns:1fr}}
+.dash-main{padding:22px 28px;overflow-y:auto}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}
+@media(max-width:600px){.stats-row{grid-template-columns:repeat(2,1fr)}}
+.stat-card{background:var(--surface);border:1px solid var(--rule);border-radius:3px;
+  padding:14px 16px}
+.stat-n{font-size:30px;font-weight:700;color:var(--gold);line-height:1;margin-bottom:3px}
+.stat-l{font-family:'Calibri',sans-serif;font-size:9px;color:var(--muted);
+  letter-spacing:.18em;text-transform:uppercase}
+.sec-label{font-family:'Calibri',sans-serif;font-size:9px;font-weight:700;
+  color:var(--golddim);letter-spacing:.22em;text-transform:uppercase;margin-bottom:12px}
+.q-card{background:var(--surface);border:1px solid var(--rule);border-radius:3px;
+  padding:14px 18px;margin-bottom:9px}
+.q-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:9px}
+.q-id{font-family:'Calibri',sans-serif;font-size:9px;font-weight:700;
+  color:var(--golddim);letter-spacing:.18em;flex-shrink:0;padding-top:2px}
+.q-snippet{font-size:11.5px;color:var(--muted);font-style:italic;flex:1;line-height:1.4}
+.q-pct{font-size:20px;font-weight:700;flex-shrink:0}
+.bar-row{display:grid;grid-template-columns:18px 1fr 32px;align-items:center;gap:7px;
+  margin-bottom:4px}
+.bar-key{font-family:'Calibri',sans-serif;font-size:9px;font-weight:700;color:var(--muted)}
+.bar-track{height:7px;background:var(--rule);border-radius:2px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;transition:width .5s ease}
+.bar-n{font-family:'Calibri',sans-serif;font-size:9px;color:var(--muted);text-align:right}
+.dash-sidebar{border-left:1px solid var(--rule);background:var(--dark);
+  display:flex;flex-direction:column;overflow:hidden}
+.sidebar-sec{padding:18px 20px;border-bottom:1px solid var(--rule)}
+.sidebar-sec:last-child{border-bottom:none}
+.join-url-box{background:#0D0B09;border:1px solid var(--golddim);border-radius:3px;
+  padding:10px 12px;margin-top:8px;word-break:break-all;
+  font-family:'Calibri',sans-serif;font-size:11px;color:var(--goldlt);line-height:1.5}
+.session-code-big{font-size:32px;font-weight:700;color:var(--parch);
+  font-family:'Calibri',sans-serif;letter-spacing:.06em;margin-top:4px}
+.arch-list{overflow-y:auto;flex:1;padding:0 20px 20px}
+.arch-row{display:flex;align-items:center;gap:9px;padding:7px 0;
+  border-bottom:1px solid #1A1816}
+.arch-row:last-child{border-bottom:none}
+.arch-ic{font-size:15px;color:var(--gold);flex-shrink:0}
+.arch-nm{font-family:'Calibri',sans-serif;font-size:11px;color:var(--warm);flex:1}
+.arch-ct{font-family:'Calibri',sans-serif;font-size:17px;font-weight:700;color:var(--gold)}
+.reset-btn{margin:12px 20px;padding:9px 0;background:transparent;
+  border:1px solid var(--rule);border-radius:2px;color:var(--muted);
+  font-family:'Calibri',sans-serif;font-size:9px;font-weight:700;
+  letter-spacing:.2em;text-transform:uppercase;cursor:pointer;width:calc(100% - 40px);
+  transition:border-color .2s,color .2s}
+.reset-btn:hover{border-color:var(--red);color:var(--redlt)}
+
+/* ── STUDENT QUIZ ── */
+#quiz{min-height:100vh;display:flex;flex-direction:column;
+  align-items:center;padding-bottom:40px}
+.quiz-header{width:100%;background:var(--dark);border-bottom:1px solid var(--rule);
+  padding:13px 18px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:10}
+.quiz-logo{font-size:12px;font-weight:700;color:var(--gold);
+  font-family:'Calibri',sans-serif;letter-spacing:.1em}
+.timer-area{display:flex;align-items:center;gap:8px}
+.timer-txt{font-family:'Calibri',sans-serif;font-size:14px;font-weight:700;min-width:36px}
+.quiz-inner{max-width:620px;width:100%;padding:22px 18px 0}
+.quiz-pips{display:flex;gap:4px;margin-bottom:20px}
+.pip{flex:1;height:3px;background:var(--rule);border-radius:2px;transition:background .3s}
+.pip.done{background:var(--gold)}
+.era-lbl{font-family:'Calibri',sans-serif;font-size:9px;color:var(--muted);
+  letter-spacing:.2em;text-transform:uppercase;margin-bottom:6px}
+.q-label{font-family:'Calibri',sans-serif;font-size:10px;font-weight:700;
+  color:var(--golddim);letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px}
+.scenario{font-size:clamp(14px,2.4vw,17px);line-height:1.6;color:var(--warm);
+  font-style:italic;margin-bottom:20px}
+.options{display:flex;flex-direction:column;gap:8px}
+.opt{display:flex;align-items:flex-start;gap:11px;padding:12px 15px;
+  background:var(--surface);border:1px solid var(--rule);border-radius:3px;
+  cursor:pointer;transition:border-color .2s,background .2s;text-align:left;width:100%}
+.opt:hover:not(:disabled){border-color:var(--gold);background:#1A1408}
+.opt:disabled{cursor:default}
+.opt.correct{border-color:var(--teal);background:#0F1C18}
+.opt.wrong{border-color:var(--red);background:#1A0A0A}
+.opt-k{font-family:'Calibri',sans-serif;font-size:10px;font-weight:700;
+  color:#6A6050;min-width:15px;padding-top:1px;flex-shrink:0}
+.opt.correct .opt-k{color:var(--teal)}
+.opt.wrong .opt-k{color:var(--red)}
+.opt-t{font-size:13px;line-height:1.45;color:#A09080}
+.opt.correct .opt-t{color:#90B8A8}
+.opt.wrong .opt-t{color:var(--redlt)}
+.insight{margin-top:14px;padding:14px 17px;background:#0A1008;
+  border:1px solid #1A3020;border-left:3px solid var(--teal);border-radius:3px;
+  animation:fadeUp .35s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.insight-lbl{font-family:'Calibri',sans-serif;font-size:9px;font-weight:700;
+  color:var(--teal);letter-spacing:.22em;text-transform:uppercase;margin-bottom:4px}
+.insight-concept{font-family:'Calibri',sans-serif;font-size:12px;font-weight:700;
+  color:var(--teallt);margin-bottom:5px}
+.insight-text{font-size:12px;line-height:1.65;color:#8AB8A0;font-style:italic}
+.next-btn{display:block;width:100%;margin-top:13px;padding:13px 0;
+  background:transparent;border:1px solid var(--gold);border-radius:2px;
+  color:var(--gold);font-family:'Calibri',sans-serif;font-size:11px;
+  font-weight:700;letter-spacing:.22em;text-transform:uppercase;cursor:pointer;
+  transition:background .2s,color .2s}
+.next-btn:hover{background:var(--gold);color:var(--black)}
+
+/* ── RESULT ── */
+#result{min-height:100vh;display:flex;align-items:center;
+  justify-content:center;padding:28px 18px}
+.result-card{max-width:520px;width:100%;background:var(--surface);
+  border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.result-bar{height:3px;background:var(--gold)}
+.result-inner{padding:28px 28px 24px}
+.result-eyebrow{font-family:'Calibri',sans-serif;font-size:9px;font-weight:700;
+  color:var(--golddim);letter-spacing:.22em;text-transform:uppercase;margin-bottom:14px}
+.result-score{font-size:66px;font-weight:700;color:var(--parch);line-height:1}
+.result-score span{font-size:24px;color:var(--muted);font-weight:400}
+.divider{height:1px;background:var(--rule);margin:18px 0}
+.arch-badge{display:flex;align-items:center;gap:11px;margin-bottom:10px}
+.arch-ic-lg{font-size:28px;color:var(--gold)}
+.arch-title{font-family:'Calibri',sans-serif;font-size:17px;font-weight:700;color:var(--gold)}
+.arch-desc{font-size:13px;line-height:1.65;color:#A09080;
+  font-style:italic;margin-bottom:18px}
+.concept-row{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.cdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.cname{font-family:'Calibri',sans-serif;font-size:11px;flex:1}
+.cera{font-family:'Calibri',sans-serif;font-size:9px;color:#3A3028}
+.revisit-box{padding:12px 15px;background:#12100E;border:1px solid var(--rule);
+  border-radius:3px;margin-bottom:16px}
+.revisit-lbl{font-family:'Calibri',sans-serif;font-size:9px;font-weight:700;
+  color:var(--golddim);letter-spacing:.22em;text-transform:uppercase;margin-bottom:7px}
+.revisit-item{font-family:'Calibri',sans-serif;font-size:11px;
+  color:var(--muted);font-style:italic;margin-bottom:3px;line-height:1.5}
+.thankyou{text-align:center;margin-top:14px;font-family:'Calibri',sans-serif;
+  font-size:11px;color:#3A3028;font-style:italic}
+</style>
+</head>
+<body>
+
+<!-- ── SETUP WIZARD ── -->
+<div id="setup">
+  <div class="bg-om">OM</div>
+  <div class="setup-inner">
+    <div class="eyebrow">OM Live — First-time setup</div>
+    <div class="setup-title">Connect to<br>Firebase</div>
+    <p class="setup-sub">One-time setup. Takes 3 minutes.<br>After this, share the URL and go live instantly.</p>
+    <div class="gold-bar"></div>
+
+    <div class="step-card">
+      <div class="step-num">Step 01</div>
+      <div class="step-title">Create a free Firebase project</div>
+      <p class="step-body">
+        Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a>
+        → Add project → give it any name (e.g. <em>om-live</em>) → skip Google Analytics → Create.
+        Then click <strong>Build → Realtime Database → Create database → Start in test mode.</strong>
+      </p>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">Step 02</div>
+      <div class="step-title">Get your config keys</div>
+      <p class="step-body">
+        In Firebase console → Project settings (gear icon) → Your apps → Add web app → Register →
+        copy the <code>firebaseConfig</code> object. Paste the values into the fields below.
+      </p>
+    </div>
+
+    <div class="step-card">
+      <div id="config-form">
+        <div class="step-num">Step 03</div>
+        <div class="step-title">Paste your config</div>
+        <div class="config-label sans">Project ID</div>
+        <input class="config-input sans" id="cfg-pid" placeholder="my-project-12345" autocomplete="off">
+        <div class="config-label sans">API Key</div>
+        <input class="config-input sans" id="cfg-key" placeholder="AIzaSy..." autocomplete="off">
+        <div class="config-label sans">Auth Domain</div>
+        <input class="config-input sans" id="cfg-auth" placeholder="my-project.firebaseapp.com" autocomplete="off">
+        <div class="config-label sans">Database URL</div>
+        <input class="config-input sans" id="cfg-db" placeholder="https://my-project-default-rtdb.firebaseio.com" autocomplete="off">
+        <button class="btn-gold sans" onclick="saveConfig()">SAVE AND CONNECT</button>
+        <div class="status-msg sans" id="cfg-status"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ROLE CHOOSER ── -->
+<div id="chooser" class="hide">
+  <div class="bg-om">OM</div>
+  <div class="chooser-inner">
+    <div class="eyebrow">MBA · Operations Management · Live Session</div>
+    <div class="chooser-title">OM Live</div>
+    <p class="chooser-sub">Real-time diagnostic for the lecture room.<br>Choose your role to begin.</p>
+    <div class="gold-bar" style="margin:0 auto 32px"></div>
+    <div class="role-grid">
+      <button class="role-card" onclick="startRole('presenter')">
+        <span class="role-icon">◈</span>
+        <div class="role-name">Presenter</div>
+        <p class="role-desc sans">Project on the main screen. See every student's answer appear live as they submit.</p>
+      </button>
+      <button class="role-card" onclick="startRole('student')">
+        <span class="role-icon">◎</span>
+        <div class="role-name">Student</div>
+        <p class="role-desc sans">Open on your phone or laptop. Answer 10 scenarios in 5 minutes.</p>
+      </button>
+    </div>
+    <div class="session-tag sans">SESSION · OM-2025 · RESULTS SYNC LIVE ACROSS ALL DEVICES</div>
+    <button class="reconfigure-btn sans" onclick="showSetup()">Reconfigure Firebase</button>
+  </div>
+</div>
+
+<!-- ── PRESENTER DASHBOARD ── -->
+<div id="dashboard" class="hide">
+  <div class="dash-header">
+    <div class="dash-logo sans">OM LIVE — PRESENTER DASHBOARD</div>
+    <div class="live-badge sans"><div class="live-dot"></div>LIVE</div>
+  </div>
+  <div class="dash-body">
+    <div class="dash-main">
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-n" id="d-part">0</div><div class="stat-l sans">Participants</div></div>
+        <div class="stat-card"><div class="stat-n" id="d-done">0</div><div class="stat-l sans">Completed</div></div>
+        <div class="stat-card"><div class="stat-n" id="d-avg">—</div><div class="stat-l sans">Avg score</div></div>
+        <div class="stat-card"><div class="stat-n" id="d-top">—</div><div class="stat-l sans">Scoring 8+</div></div>
+      </div>
+      <div class="sec-label sans">RESULTS BY QUESTION</div>
+      <div id="d-qs"></div>
+    </div>
+    <div class="dash-sidebar">
+      <div class="sidebar-sec">
+        <div class="sec-label sans" style="margin-bottom:7px">HOW STUDENTS JOIN</div>
+        <p class="sans" style="font-size:11px;color:var(--muted);line-height:1.5">Share this URL — students open it and tap <strong style="color:var(--warm)">Student</strong></p>
+        <div class="join-url-box" id="d-url">Loading…</div>
+        <div class="sec-label sans" style="margin:14px 0 4px">SESSION CODE</div>
+        <div class="session-code-big">OM-2025</div>
+      </div>
+      <div class="sidebar-sec" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+        <div class="sec-label sans" style="margin-bottom:9px">OPERATIONS ARCHETYPES</div>
+        <div class="arch-list" id="d-archs"></div>
+      </div>
+      <button class="reset-btn sans" onclick="resetSession()">RESET SESSION</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── STUDENT QUIZ ── -->
+<div id="quiz" class="hide">
+  <div class="quiz-header">
+    <div class="quiz-logo sans">OM LIVE</div>
+    <div class="timer-area">
+      <svg width="24" height="24">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="#2A2520" stroke-width="2.5"/>
+        <circle id="t-ring" cx="12" cy="12" r="9" fill="none" stroke="#1A5C52"
+          stroke-width="2.5" stroke-dasharray="56.55" stroke-dashoffset="0"
+          stroke-linecap="round" transform="rotate(-90 12 12)"
+          style="transition:stroke-dashoffset 1s linear,stroke .5s"/>
+      </svg>
+      <div class="timer-txt sans" id="q-timer">5:00</div>
+    </div>
+  </div>
+  <div class="quiz-inner">
+    <div id="quiz-content"></div>
+  </div>
+</div>
+
+<!-- ── RESULT ── -->
+<div id="result" class="hide">
+  <div class="result-card">
+    <div class="result-bar"></div>
+    <div class="result-inner" id="result-inner"></div>
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.13.1/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/10.13.1/firebase-database-compat.min.js"></script>
+
+<script>
+// ── QUESTIONS ──────────────────────────────────────────────────────────────
+const QS=[
+  {id:1,era:"Operations Research",
+   s:"Your factory produces 10,000 units per week. A bottleneck machine breaks down for 4 hours. A manager says: run overtime on all other machines to make up the output. What do you do?",
+   opts:[{k:"A",t:"Approve overtime across all machines immediately",v:"a"},{k:"B",t:"Only run overtime on the bottleneck once repaired",v:"b"},{k:"C",t:"Accept the lost output — overtime elsewhere wastes resources",v:"c"},{k:"D",t:"Outsource the bottleneck's workload for this week",v:"d"}],
+   correct:"c",concept:"Theory of Constraints (Goldratt)",
+   insight:"In any system, output is limited by the single bottleneck. Overtime on non-bottleneck machines produces inventory that cannot move forward — it is waste. Only the bottleneck determines system throughput."},
+  {id:2,era:"Supply Chain Era",
+   s:"You are Tim Cook in 1998. Apple has 100 suppliers, 19 warehouses, and 2 months of inventory. The company is near bankruptcy. Your first call is to:",
+   opts:[{k:"A",t:"Negotiate lower prices from all 100 suppliers",v:"a"},{k:"B",t:"Cut suppliers to 24 and close 10 of 19 warehouses",v:"b"},{k:"C",t:"Build a larger inventory buffer as protection",v:"c"},{k:"D",t:"Hire more supply chain managers to improve coordination",v:"d"}],
+   correct:"b",concept:"Supply Chain Rationalisation",
+   insight:"Cook's counter-intuitive move: fewer suppliers means deeper relationships and simpler coordination. Inventory is a liability — it is the cost of uncertainty. Complexity is the enemy of speed. This decision alone saved Apple."},
+  {id:3,era:"Operations Research Era",
+   s:"A Toyota line worker spots a potential defect. Any worker may pull the Andon cord and stop the entire production line. Stopping costs $15,000 per minute. The worker is uncertain. What should the culture encourage?",
+   opts:[{k:"A",t:"Pull the cord — quality always takes priority over throughput",v:"a"},{k:"B",t:"Flag it to a supervisor first — do not stop production alone",v:"b"},{k:"C",t:"Continue and check the batch at end-of-line QC",v:"c"},{k:"D",t:"Depends on the defect severity and production schedule",v:"d"}],
+   correct:"a",concept:"Jidoka — Autonomation with Human Touch",
+   insight:"Toyota's foundational principle: stop and fix problems at the source rather than push defective work downstream. The cost of one Andon stop is far lower than the cost of recalls, rework, and reputation damage."},
+  {id:4,era:"Quality Revolution",
+   s:"A GE plant runs at 35,000 defects per million operations. A consultant recommends new equipment. Jack Welch invests $1 billion in employee training instead. Who is right?",
+   opts:[{k:"A",t:"The consultant — new equipment reduces defect rates faster",v:"a"},{k:"B",t:"Welch — people create quality, machines only enable it",v:"b"},{k:"C",t:"Neither — the real problem is process design",v:"c"},{k:"D",t:"Both — a combination of equipment and training is optimal",v:"d"}],
+   correct:"b",concept:"Quality as Human System",
+   insight:"Machines execute what processes design. Processes are followed by people. Welch understood that no machine would close the quality gap until every employee could measure and improve their own process. His $1B investment returned $12B in 5 years — a 12× ROI on human capability."},
+  {id:5,era:"Agricultural Revolution",
+   s:"India, 1965: a new high-yield wheat seed has been developed for 50 million farmers. An advisor says: 'The seed is the hard part — distribution will follow.' What critical insight are they missing?",
+   opts:[{k:"A",t:"Farmer training on the new seed variety is the hardest part",v:"a"},{k:"B",t:"Financing for farmers to buy the seed is the key constraint",v:"b"},{k:"C",t:"Fertiliser, storage, procurement, and distribution must be co-designed with the seed",v:"c"},{k:"D",t:"Government price support is the most critical intervention",v:"d"}],
+   correct:"c",concept:"Systems Thinking — Value Chain Co-design",
+   insight:"Technology without operational infrastructure fails. The seed needed fertiliser networks, price floors, warehouse capacity, and distribution simultaneously. The seed was 20% of the achievement. The supply chain was the other 80%."},
+  {id:6,era:"IT & AI Revolution",
+   s:"Amazon's warehouse has 750 Kiva robots. A new AI routing algorithm promises 12% efficiency gains. Before deploying across all 1,000 warehouses, the operations head says: 'Run it in three sites for 60 days first.' Why?",
+   opts:[{k:"A",t:"To train warehouse staff on the new system before full rollout",v:"a"},{k:"B",t:"To measure real-world impact and catch systemic failures before they scale",v:"b"},{k:"C",t:"Legal and regulatory approval takes 60 days",v:"c"},{k:"D",t:"IT infrastructure cannot support simultaneous deployment across 1,000 sites",v:"d"}],
+   correct:"b",concept:"Controlled Rollout — DMAIC Improve Phase",
+   insight:"A 12% improvement with an edge-case failure mode becomes a systemic crisis at 1,000 sites. Controlled pilots are the Improve phase of Six Sigma — validate before scaling. The cost of a failed deployment dwarfs the 60-day delay."},
+  {id:7,era:"Industrial Revolution",
+   s:"Ford's assembly line cut Model T production from 12 hours to 93 minutes. GM responded with more models in more colours. Ford said: 'Any colour as long as it's black.' Who had the better strategy — and when does it break down?",
+   opts:[{k:"A",t:"Ford — standardisation always beats variety in manufacturing",v:"a"},{k:"B",t:"GM — customer choice always beats operational efficiency",v:"b"},{k:"C",t:"Ford was right then; his strategy breaks down when customers have real alternatives",v:"c"},{k:"D",t:"Both were wrong — the optimal answer is mass customisation",v:"d"}],
+   correct:"c",concept:"Process-Market Fit — When Efficiency Becomes Rigidity",
+   insight:"Ford's standardisation was correct for a market with no alternatives. When GM offered variety, customers chose choice over price. What creates advantage in a nascent market becomes a fatal constraint in a mature one."},
+  {id:8,era:"Agile Era",
+   s:"Zara delivers a new clothing item to stores in 15 days. H&M takes 6 months. Zara's production cost per unit is higher. How does Zara win on margin?",
+   opts:[{k:"A",t:"Zara sells at premium prices that offset higher production costs",v:"a"},{k:"B",t:"Zara sells to higher-income customers who are less price-sensitive",v:"b"},{k:"C",t:"Speed eliminates markdown losses — Zara sells nearly everything at full price",v:"c"},{k:"D",t:"Zara's volume brings unit costs below H&M's despite faster cycles",v:"d"}],
+   correct:"c",concept:"Agile Operations — Speed as Inventory Strategy",
+   insight:"40–60% of H&M's fashion inventory is sold at markdown. Zara's 15-day cycle means it produces close to confirmed demand — less guessing, less unsold stock, fewer markdowns. Speed IS the inventory strategy."},
+  {id:9,era:"AI Revolution",
+   s:"A senior engineer at Zoho ships 3 weeks of code in 1 day using AI tools. The CFO proposes replacing the engineer with two junior developers and the same AI to save 40% in salary. The CTO pushes back. Who is right?",
+   opts:[{k:"A",t:"CFO — AI democratises expertise, making senior salaries hard to justify",v:"a"},{k:"B",t:"CTO — the AI produces the output but the engineer provides quality judgement",v:"b"},{k:"C",t:"Neither — it depends on the complexity of the tasks involved",v:"c"},{k:"D",t:"CFO short-term; CTO long-term as juniors develop",v:"d"}],
+   correct:"b",concept:"AI as Amplifier — Vembu's Law",
+   insight:"The AI generates plausible code at speed. The senior engineer knows which plausible output is wrong and why it will fail in production. Remove the veteran and the AI produces confident errors at 20× the speed. AI amplifies expertise — it does not replace it."},
+  {id:10,era:"Operations Research",
+   s:"You are the new COO of a hospital with a 4-hour average emergency department wait time. The target is 2 hours. Which operations methodology do you apply first?",
+   opts:[{k:"A",t:"Lean — map the patient journey and eliminate every non-value-adding step",v:"a"},{k:"B",t:"Six Sigma — measure wait time variation and apply DMAIC to reduce it",v:"b"},{k:"C",t:"Agile — implement rapid experiments in triage and discharge processes weekly",v:"c"},{k:"D",t:"Theory of Constraints — find the single bottleneck causing the delay first",v:"d"}],
+   correct:"d",concept:"Constraint-First Thinking",
+   insight:"Before applying any methodology, find the constraint. In most emergency departments it is a single step: imaging, discharge decisions, or bed availability. Find the constraint first. Then choose your methodology. Always."},
+];
+
+const ARCHETYPES=[
+  {min:9,icon:"◈",title:"Systems Architect",desc:"You see the whole before the parts. You would thrive as a COO at scale."},
+  {min:7,icon:"◉",title:"Quality Strategist",desc:"You prioritise getting it right over getting it fast. You excel in regulated industries."},
+  {min:5,icon:"◎",title:"Operations Pragmatist",desc:"You balance efficiency with context and ask what fits this situation — the right question."},
+  {min:3,icon:"○",title:"Emerging Analyst",desc:"Your instincts are sound; the frameworks are still forming. Keep going."},
+  {min:0,icon:"◌",title:"Clean Slate",desc:"You are here to learn — and that is the only prerequisite that matters."},
+];
+
+// ── FIREBASE STATE ─────────────────────────────────────────────────────────
+const CFG_KEY="om_live_firebase_config";
+const SESSION="om2025";
+let db=null,role=null,curQ=0,selected=null,answered=false,score=0,myAnswers=[],timeLeft=300,timerInt=null;
+
+// ── SETUP ──────────────────────────────────────────────────────────────────
+function saveConfig(){
+  const pid=v("cfg-pid"),key=v("cfg-key"),auth=v("cfg-auth"),dbUrl=v("cfg-db");
+  if(!pid||!key||!auth||!dbUrl){status("cfg-status","Please fill in all four fields.","err");return}
+  const cfg={apiKey:key,authDomain:auth,databaseURL:dbUrl,projectId:pid};
+  localStorage.setItem(CFG_KEY,JSON.stringify(cfg));
+  initFirebase(cfg);
+}
+
+function initFirebase(cfg){
+  status("cfg-status","Connecting…","");
+  try{
+    if(firebase.apps.length)firebase.apps[0].delete().then(()=>_init(cfg));
+    else _init(cfg);
+  }catch(e){status("cfg-status","Connection failed: "+e.message,"err")}
+}
+
+function _init(cfg){
+  try{
+    firebase.initializeApp(cfg);
+    db=firebase.database();
+    db.ref(SESSION+"/ping").set(Date.now()).then(()=>{
+      status("cfg-status","Connected! Loading…","ok");
+      setTimeout(()=>{hide("setup");show("chooser")},800);
+    }).catch(e=>{status("cfg-status","Write failed: "+e.message+". Check your Database URL and test mode rules.","err")});
+  }catch(e){status("cfg-status","Init failed: "+e.message,"err")}
+}
+
+function showSetup(){hide("chooser");show("setup");const s=loadCfg();if(s){set("cfg-pid",s.projectId||"");set("cfg-key",s.apiKey||"");set("cfg-auth",s.authDomain||"");set("cfg-db",s.databaseURL||"")}}
+function loadCfg(){try{return JSON.parse(localStorage.getItem(CFG_KEY))}catch{return null}}
+
+// Boot: if config exists, try to auto-connect
+window.addEventListener("load",()=>{
+  const cfg=loadCfg();
+  if(cfg&&cfg.apiKey){initFirebase(cfg)}
+  // show URL in presenter dashboard
+  document.getElementById("d-url").textContent=window.location.href.split("?")[0];
+});
+
+// ── ROLE ───────────────────────────────────────────────────────────────────
+function startRole(r){
+  role=r;
+  hide("chooser");
+  if(r==="presenter"){show("dashboard");startPresenter();}
+  else{show("quiz");renderQ();startTimer();}
+}
+
+// ── PRESENTER ──────────────────────────────────────────────────────────────
+function startPresenter(){
+  if(!db)return;
+  db.ref(SESSION+"/results").on("value",snap=>{
+    const results=[];
+    snap.forEach(c=>results.push(c.val()));
+    updateDash(results);
+  });
+}
+
+function updateDash(results){
+  const n=results.length;
+  const done=results.filter(r=>r.complete).length;
+  const scores=results.filter(r=>r.complete).map(r=>r.score);
+  const avg=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1):"—";
+  const top=scores.length?Math.round(scores.filter(s=>s>=8).length/scores.length*100)+"%":"—";
+  set("d-part",n);set("d-done",done);set("d-avg",avg);set("d-top",top);
+
+  // Per-question tallies
+  const tallies=QS.map(q=>({q,counts:{a:0,b:0,c:0,d:0},total:0}));
+  results.forEach(r=>{
+    if(!r.answers)return;
+    Object.values(r.answers).forEach(a=>{
+      const idx=tallies.findIndex(t=>t.q.id===a.qid);
+      if(idx>=0&&a.v){tallies[idx].counts[a.v]=(tallies[idx].counts[a.v]||0)+1;tallies[idx].total++;}
+    });
+  });
+
+  document.getElementById("d-qs").innerHTML=tallies.map(({q,counts,total})=>{
+    const cc=counts[q.correct]||0;
+    const pct=total?Math.round(cc/total*100):null;
+    const pcol=pct===null?"var(--muted)":pct>=70?"var(--teallt)":pct>=40?"var(--goldlt)":"var(--redlt)";
+    const bars=["a","b","c","d"].map((v,i)=>{
+      const n2=counts[v]||0;const p=total?Math.round(n2/total*100):0;
+      const col=v===q.correct?"var(--teal)":"var(--slate)";
+      return`<div class="bar-row"><div class="bar-key sans">${["A","B","C","D"][i]}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${col}"></div></div>
+        <div class="bar-n sans">${n2}</div></div>`;
+    }).join("");
+    return`<div class="q-card"><div class="q-head">
+      <div class="q-id sans">Q${q.id}</div>
+      <div class="q-snippet">${q.s.substring(0,75)}…</div>
+      <div class="q-pct" style="color:${pcol}">${pct===null?"—":pct+"%"}</div>
+    </div><div>${bars}</div></div>`;
+  }).join("");
+
+  // Archetypes
+  const ac=ARCHETYPES.map(a=>({...a,count:0}));
+  results.filter(r=>r.complete).forEach(r=>{
+    const a=ac.find(a=>r.score>=a.min);if(a)a.count++;
+  });
+  document.getElementById("d-archs").innerHTML=ac.map(a=>`
+    <div class="arch-row">
+      <div class="arch-ic">${a.icon}</div>
+      <div class="arch-nm">${a.title}</div>
+      <div class="arch-ct">${a.count}</div>
+    </div>`).join("");
+}
+
+function resetSession(){
+  if(!db||!confirm("Reset all results? This cannot be undone."))return;
+  db.ref(SESSION+"/results").remove().then(()=>updateDash([]));
+}
+
+// ── STUDENT QUIZ ───────────────────────────────────────────────────────────
+const CIRC=2*Math.PI*9;
+const sid="s"+Date.now()+Math.random().toString(36).slice(2,7);
+
+function startTimer(){
+  timerInt=setInterval(()=>{
+    timeLeft--;renderTimer();
+    if(timeLeft<=0){clearInterval(timerInt);finishQuiz();}
+  },1000);
+}
+
+function renderTimer(){
+  const m=Math.floor(timeLeft/60),s=timeLeft%60;
+  const el=document.getElementById("q-timer");if(el)el.textContent=`${m}:${String(s).padStart(2,"0")}`;
+  const pct=timeLeft/300;const ring=document.getElementById("t-ring");
+  if(ring){
+    ring.setAttribute("stroke-dashoffset",CIRC-pct*CIRC);
+    ring.setAttribute("stroke",timeLeft<60?"#9B2335":timeLeft<120?"#B8944A":"#1A5C52");
+  }
+}
+
+function renderQ(){
+  const q=QS[curQ];
+  const pips=QS.map((_,i)=>`<div class="pip${i<=curQ?" done":""}"></div>`).join("");
+  const opts=q.opts.map(o=>{
+    let cls="opt";
+    if(answered){if(o.v===q.correct)cls+=" correct";else if(o.v===selected)cls+=" wrong";}
+    return`<button class="${cls}"${answered?" disabled":""} onclick="choose('${o.v}')">
+      <span class="opt-k">${o.k}</span><span class="opt-t">${o.t}</span></button>`;
+  }).join("");
+  const insight=answered?`
+    <div class="insight">
+      <div class="insight-lbl">Concept Insight</div>
+      <div class="insight-concept">${q.concept}</div>
+      <div class="insight-text">${q.insight}</div>
+    </div>
+    <button class="next-btn sans" onclick="nextQ()">
+      ${curQ+1>=QS.length?"See My Result →":"Next Scenario →"}</button>`:"";
+  document.getElementById("quiz-content").innerHTML=`
+    <div class="quiz-pips">${pips}</div>
+    <div class="q-label sans">Scenario ${q.id} of ${QS.length}</div>
+    <div class="era-lbl">${q.era}</div>
+    <div class="scenario">${q.s}</div>
+    <div class="options">${opts}</div>${insight}`;
+}
+
+function choose(v){
+  if(answered)return;
+  selected=v;answered=true;
+  const q=QS[curQ];
+  if(v===q.correct)score++;
+  myAnswers.push({qid:q.id,v,correct:v===q.correct,concept:q.concept,era:q.era});
+  pushProgress();renderQ();
+}
+
+function nextQ(){
+  if(curQ+1>=QS.length){finishQuiz();}
+  else{curQ++;selected=null;answered=false;renderQ();}
+}
+
+function pushProgress(){
+  if(!db)return;
+  const answersObj={};myAnswers.forEach((a,i)=>answersObj[i]=a);
+  db.ref(`${SESSION}/results/${sid}`).set({
+    score,complete:false,answers:answersObj,ts:Date.now()
+  });
+}
+
+function finishQuiz(){
+  clearInterval(timerInt);
+  const answersObj={};myAnswers.forEach((a,i)=>answersObj[i]=a);
+  if(db)db.ref(`${SESSION}/results/${sid}`).set({
+    score,complete:true,answers:answersObj,ts:Date.now()
+  });
+  hide("quiz");show("result");renderResult();
+}
+
+// ── RESULT ─────────────────────────────────────────────────────────────────
+function renderResult(){
+  const arch=ARCHETYPES.find(a=>score>=a.min)||ARCHETYPES[ARCHETYPES.length-1];
+  const wrong=myAnswers.filter(a=>!a.correct);
+  const rows=myAnswers.map(a=>`
+    <div class="concept-row">
+      <div class="cdot" style="background:${a.correct?"#1A5C52":"#9B2335"}"></div>
+      <div class="cname sans" style="color:${a.correct?"#6EC8A0":"#D08080"}">${a.concept}</div>
+      <div class="cera sans">${a.era}</div>
+    </div>`).join("");
+  const revisit=wrong.length?`<div class="revisit-box">
+    <div class="revisit-lbl sans">Revisit These Concepts</div>
+    ${wrong.map(a=>{const q=QS.find(q=>q.id===a.qid);
+      return`<div class="revisit-item">— ${q.concept}: ${q.insight.split(".")[0]}.</div>`;
+    }).join("")}</div>`:"";
+  document.getElementById("result-inner").innerHTML=`
+    <div class="result-eyebrow sans">Diagnostic Complete</div>
+    <div class="result-score">${score}<span> / ${QS.length}</span></div>
+    <div class="divider"></div>
+    <div class="arch-badge"><div class="arch-ic-lg">${arch.icon}</div>
+      <div class="arch-title sans">${arch.title}</div></div>
+    <div class="arch-desc">${arch.desc}</div>
+    <div class="divider"></div>
+    <div class="sec-label sans" style="margin-bottom:9px">Concept Coverage</div>
+    ${rows}${revisit}
+    <button class="btn-gold sans" onclick="retake()" style="margin-top:18px">Retake Diagnostic</button>
+    <div class="thankyou">Your result has been shared with the class dashboard.</div>`;
+}
+
+function retake(){
+  curQ=0;selected=null;answered=false;score=0;myAnswers=[];timeLeft=300;
+  hide("result");show("quiz");renderQ();renderTimer();startTimer();
+}
+
+// ── HELPERS ────────────────────────────────────────────────────────────────
+function show(id){document.getElementById(id).classList.remove("hide")}
+function hide(id){document.getElementById(id).classList.add("hide")}
+function set(id,val){const e=document.getElementById(id);if(e)e.textContent=val}
+function v(id){return document.getElementById(id)?.value.trim()||""}
+function status(id,msg,cls){const e=document.getElementById(id);if(!e)return;e.textContent=msg;e.className="status-msg sans "+(cls||"");}
+</script>
+</body>
+</html>
